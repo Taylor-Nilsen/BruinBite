@@ -1,10 +1,3 @@
-//
-//  BruinBiteApp.swift
-//  BruinBite
-//
-//  Created by Taylor Nilsen on 9/22/25.
-//
-
 import SwiftUI
 
 @main
