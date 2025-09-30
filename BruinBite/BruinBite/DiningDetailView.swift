@@ -36,7 +36,7 @@ struct DiningDetailView: View {
                             .foregroundColor(.gray)
                     }
                     
-                    if let hoursData = row.diningHours {
+                    if let hoursData = row.diningHours, row.hall.type == .residential {
                         VStack(spacing: 8) {
                             if let breakfast = hoursData.breakfast {
                                 HStack {
@@ -85,7 +85,7 @@ struct DiningDetailView: View {
                         }
                         .padding(.horizontal, 20)
                         .padding(.top, 8)
-                    } else {
+                    } else if row.hall.type == .residential {
                         Text("Loading hours...")
                             .font(.system(size: 16))
                             .foregroundColor(.gray)

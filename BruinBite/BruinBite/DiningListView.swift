@@ -138,11 +138,6 @@ private struct CampusRow: View {
                 Text(row.name)
                     .appFont(.headline)
                 Spacer()
-                if let statusText = row.statusText {
-                    Text(statusText)
-                        .appFont(.subheadline)
-                        .foregroundColor(row.statusColor)
-                }
             }
             
             if let distance = row.distanceMiles {

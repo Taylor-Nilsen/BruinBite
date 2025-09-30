@@ -123,26 +123,37 @@ final class DiningService {
                 let tdMatches = tdRegex.matches(in: tr, options: [], range: NSRange(location: 0, length: tr.count))
                 print("DEBUG: tdMatches.count = \(tdMatches.count) for tr: \(tr.prefix(200))")
                 if tdMatches.count >= 4 {
-                    let nameRange = Range(tdMatches[0].range(at: 1), in: tr)!
+                    let nameIndex = tdMatches.count > 5 ? 1 : 0
+                    let breakfastIndex = nameIndex + 1
+                    let lunchIndex = nameIndex + 2
+                    let dinnerIndex = nameIndex + 3
+                    let lateNightIndex = tdMatches.count > nameIndex + 4 ? nameIndex + 4 : nil
+                    
+                    let nameRange = Range(tdMatches[nameIndex].range(at: 1), in: tr)!
                     let name = String(tr[nameRange]).trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "&nbsp;", with: " ").replacingOccurrences(of: "&#160;", with: " ").replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression).replacingOccurrences(of: "&eacute;", with: "é").replacingOccurrences(of: "&#39;", with: "'").replacingOccurrences(of: "’", with: "'").replacingOccurrences(of: "é", with: "e").lowercased().replacingOccurrences(of: "[^a-z]", with: "", options: .regularExpression)
-                    let breakfastRange = Range(tdMatches[1].range(at: 1), in: tr)!
+                    
+                    let breakfastRange = Range(tdMatches[breakfastIndex].range(at: 1), in: tr)!
                     let breakfast = String(tr[breakfastRange]).trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "&nbsp;", with: "").replacingOccurrences(of: "&#160;", with: "").replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression).replacingOccurrences(of: "a.m.", with: "am").replacingOccurrences(of: "p.m.", with: "pm")
-                    let lunchRange = Range(tdMatches[2].range(at: 1), in: tr)!
+                    
+                    let lunchRange = Range(tdMatches[lunchIndex].range(at: 1), in: tr)!
                     let lunch = String(tr[lunchRange]).trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "&nbsp;", with: "").replacingOccurrences(of: "&#160;", with: "").replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression).replacingOccurrences(of: "a.m.", with: "am").replacingOccurrences(of: "p.m.", with: "pm")
-                    let dinnerRange = Range(tdMatches[3].range(at: 1), in: tr)!
+                    
+                    let dinnerRange = Range(tdMatches[dinnerIndex].range(at: 1), in: tr)!
                     let dinner = String(tr[dinnerRange]).trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "&nbsp;", with: "").replacingOccurrences(of: "&#160;", with: "").replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression).replacingOccurrences(of: "a.m.", with: "am").replacingOccurrences(of: "p.m.", with: "pm")
+                    
                     let lateNight: String?
-                    if tdMatches.count >= 5 {
-                        let lateNightRange = Range(tdMatches[4].range(at: 1), in: tr)!
+                    if let lateNightIndex = lateNightIndex {
+                        let lateNightRange = Range(tdMatches[lateNightIndex].range(at: 1), in: tr)!
                         lateNight = String(tr[lateNightRange]).trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "&nbsp;", with: "").replacingOccurrences(of: "&#160;", with: "").replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression).replacingOccurrences(of: "a.m.", with: "am").replacingOccurrences(of: "p.m.", with: "pm")
                     } else {
                         lateNight = nil
                     }
+                    
                     let mealHours = MealHours(
-                        breakfast: breakfast.lowercased() == "closed" || breakfast.isEmpty ? nil : breakfast,
-                        lunch: lunch.lowercased() == "closed" || lunch.isEmpty ? nil : lunch,
-                        dinner: dinner.lowercased() == "closed" || dinner.isEmpty ? nil : dinner,
-                        lateNight: lateNight?.lowercased() == "closed" || lateNight?.isEmpty == true ? nil : lateNight
+                        breakfast: breakfast.lowercased() == "closed" || breakfast.isEmpty ? nil : convertTo24Hour(breakfast),
+                        lunch: lunch.lowercased() == "closed" || lunch.isEmpty ? nil : convertTo24Hour(lunch),
+                        dinner: dinner.lowercased() == "closed" || dinner.isEmpty ? nil : convertTo24Hour(dinner),
+                        lateNight: lateNight?.lowercased() == "closed" || lateNight?.isEmpty == true ? nil : convertTo24Hour(lateNight!)
                     )
                     hoursDict[name] = mealHours
                     print("DEBUG: added hours for \(name): \(mealHours)")
@@ -151,5 +162,29 @@ final class DiningService {
         }
         print("DEBUG: final parsed hoursDict = \(hoursDict)")
         return hoursDict
+    }
+    
+    private func convertTo24Hour(_ timeString: String) -> String {
+        let components = timeString.components(separatedBy: " - ")
+        var converted = [String]()
+        for comp in components {
+            let trimmed = comp.trimmingCharacters(in: .whitespaces)
+            if let convertedTime = convertSingleTime(trimmed) {
+                converted.append(convertedTime)
+            } else {
+                converted.append(trimmed) // fallback
+            }
+        }
+        return converted.joined(separator: " - ")
+    }
+    
+    private func convertSingleTime(_ time: String) -> String? {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mma"
+        if let date = formatter.date(from: time) {
+            formatter.dateFormat = "HH:mm"
+            return formatter.string(from: date)
+        }
+        return nil
     }
 }

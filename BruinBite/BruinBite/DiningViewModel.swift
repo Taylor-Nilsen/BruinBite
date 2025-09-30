@@ -51,6 +51,13 @@ class DiningViewModel: ObservableObject {
         }
         
         func updateStatus(with hours: inout MealHours) {
+            if hall.type == .campusRetail {
+                isOpen = true
+                statusText = nil
+                statusColor = .gray
+                return
+            }
+            
             let now = Date()
             var intervals: [(start: Date, end: Date)] = []
             
