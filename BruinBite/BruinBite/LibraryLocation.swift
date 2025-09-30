@@ -3,13 +3,13 @@ import Foundation
 public struct LibraryLocation: Identifiable, Hashable {
     public let id: String
     public let name: String
-    public let hours: [LibraryHours]
+    public var services: [LibraryService]
     public let coordinate: GeoPoint?
     
-    public init(id: String, name: String, hours: [LibraryHours] = [], coordinate: GeoPoint?) {
+    public init(id: String, name: String, services: [LibraryService] = [], coordinate: GeoPoint?) {
         self.id = id
         self.name = name
-        self.hours = hours
+        self.services = services
         self.coordinate = coordinate
     }
     
@@ -22,19 +22,17 @@ public struct LibraryLocation: Identifiable, Hashable {
     public static func == (lhs: LibraryLocation, rhs: LibraryLocation) -> Bool {
         lhs.id == rhs.id && 
         lhs.name == rhs.name && 
-        lhs.hours == rhs.hours && 
+        lhs.services == rhs.services && 
         lhs.coordinate == rhs.coordinate
     }
 }
 
-public struct LibraryHours: Hashable {
-    public let day: String
-    public let open: String
-    public let close: String
+public struct LibraryService: Hashable {
+    public let name: String
+    public let time: String
     
-    public init(day: String, open: String, close: String) {
-        self.day = day
-        self.open = open
-        self.close = close
+    public init(name: String, time: String) {
+        self.name = name
+        self.time = time
     }
 }

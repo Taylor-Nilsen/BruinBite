@@ -35,6 +35,30 @@ struct LibraryDetailView: View {
                             .foregroundColor(.gray)
                             .monospacedDigit()
                     }
+                    
+                    if !library.services.isEmpty {
+                        VStack(spacing: 8) {
+                            ForEach(library.services.sorted { $0.name == "Library" && $1.name != "Library" }, id: \.name) { service in
+                                HStack {
+                                    Text(service.name)
+                                        .font(.system(size: 16))
+                                        .foregroundColor(.white)
+                                    Spacer()
+                                    Text(service.time)
+                                        .font(.system(size: 16))
+                                        .foregroundColor(.white)
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 8)
+                    } else {
+                        Text("Loading hours...")
+                            .font(.system(size: 16))
+                            .foregroundColor(.gray)
+                            .padding(.horizontal, 20)
+                            .padding(.top, 8)
+                    }
                 }
                 .padding(.top, -20)
                 
@@ -79,7 +103,7 @@ struct LibraryDetailView: View {
             library: LibraryLocation(
                 id: "powell",
                 name: "Powell Library",
-                hours: [],
+                services: [],
                 coordinate: GeoPoint(lat: 34.07192, lon: -118.44218)
             ),
             distanceMiles: 0.2
