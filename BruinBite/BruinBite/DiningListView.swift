@@ -9,11 +9,11 @@ enum DiningListMode {
 /// Main list view containing dining hall entries
 /// Each row in the list is called an "entry" and tapping it opens a "card" view
 struct DiningListView: View {
-    @StateObject private var vm: DiningViewModel
+    @ObservedObject var vm: DiningViewModel
     let mode: DiningListMode
     
     init(vm: DiningViewModel, mode: DiningListMode) {
-        _vm = StateObject(wrappedValue: vm)
+        self.vm = vm
         self.mode = mode
     }
 

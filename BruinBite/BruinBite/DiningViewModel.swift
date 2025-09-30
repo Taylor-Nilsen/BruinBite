@@ -23,12 +23,14 @@ class DiningViewModel: ObservableObject {
         let name: String
         let hall: DiningHall
         let distanceMiles: Double?
+        @Published var hours: MealHours?
         
-        init(id: String, name: String, hall: DiningHall, distanceMiles: Double?) {
+        init(id: String, name: String, hall: DiningHall, distanceMiles: Double?, hours: MealHours? = nil) {
             self.id = id
             self.name = name
             self.hall = hall
             self.distanceMiles = distanceMiles
+            self.hours = hours
         }
     }
 
@@ -38,6 +40,9 @@ class DiningViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in self?.recomputeDistancesAndResort() }
             .store(in: &cancellables)
+        
+        // Load initial data
+        load()
     }
     
     // MARK: - Public API
@@ -100,6 +105,9 @@ class DiningViewModel: ObservableObject {
             self.residential = resRows
             self.retail = retailRows
 
+            // Fetch hours asynchronously
+            Task { await self.fetchHours() }
+
         } catch {
             self.errorMessage = "Failed to load dining data. Please try again."
             self.residential = []
@@ -123,7 +131,7 @@ class DiningViewModel: ObservableObject {
                     miles = DistanceCalculator.distance(from: origin, to: coord, unit: .miles)
                 }
                 return .init(id: r.id, name: r.name, hall: r.hall,
-                           distanceMiles: miles)
+                           distanceMiles: miles, hours: r.hours)
             }
         }
 
@@ -131,6 +139,23 @@ class DiningViewModel: ObservableObject {
         recompute(&retail)
         sortByDistanceThenName(&residential)
         sortByDistanceThenName(&retail)
+    }
+
+    private func fetchHours() async {
+        do {
+            let html = try await service.fetchHTML()
+            let hoursDict = service.parseHours(from: html)
+            await MainActor.run {
+                for row in self.residential {
+                    row.hours = hoursDict[row.name.lowercased()]
+                }
+                for row in self.retail {
+                    row.hours = hoursDict[row.name.lowercased()]
+                }
+            }
+        } catch {
+            // Optionally set error, but for now ignore
+        }
     }
 
     private func sortByDistanceThenName(_ rows: inout [RowModel]) {

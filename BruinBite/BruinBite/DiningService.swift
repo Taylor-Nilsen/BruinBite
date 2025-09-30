@@ -55,7 +55,8 @@ final class DiningService {
             DiningHall(id: "Rendezvous", name: "Rendezvous", type: .residential, coordinate: GPSOverrides.halls["Rendezvous"]),
             DiningHall(id: "BruinCafe", name: "Bruin Café", type: .residential, coordinate: GPSOverrides.halls["BruinCafe"]),
             DiningHall(id: "Cafe1919", name: "Café 1919", type: .residential, coordinate: GPSOverrides.halls["Cafe1919"]),
-            DiningHall(id: "FEASTAtRieber", name: "FEAST at Rieber", type: .residential, coordinate: GPSOverrides.halls["FEASTAtRieber"])
+            DiningHall(id: "FEASTAtRieber", name: "FEAST at Rieber", type: .residential, coordinate: GPSOverrides.halls["FEASTAtRieber"]),
+            DiningHall(id: "FoodTrucks", name: "Food Trucks", type: .residential, coordinate: nil)
         ]
         return halls
     }
@@ -81,5 +82,60 @@ final class DiningService {
             DiningHall(id: "SouthCampusFood", name: "South Campus Food Court", type: .campusRetail, coordinate: GPSOverrides.campus["SouthCampusFood"])
         ]
         return spots
+    }
+    
+    func fetchHTML() async throws -> String {
+        let url = URL(string: "https://dining.ucla.edu/hours/")!
+        let (data, _) = try await URLSession.shared.data(from: url)
+        guard let html = String(data: data, encoding: .utf8) else {
+            throw NSError(domain: "DiningService", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to decode HTML"])
+        }
+        return html
+    }
+
+    func parseHours(from html: String) -> [String: MealHours] {
+        var hoursDict = [String: MealHours]()
+        // Find the Hours of Operation section
+        guard let hoursStart = html.range(of: "Hours of Operation") else { return hoursDict }
+        let htmlFromHours = html[hoursStart.lowerBound...]
+        // Find the table
+        guard let tableStart = htmlFromHours.range(of: "<table") else { return hoursDict }
+        let tableEndRange = htmlFromHours[tableStart.lowerBound...].range(of: "</table>")
+        let tableEnd = tableEndRange?.lowerBound ?? htmlFromHours.endIndex
+        let tableSubstring = htmlFromHours[tableStart.lowerBound..<tableEnd]
+        let table = String(tableSubstring)
+        // Find all <tr>
+        let trRegex = try? NSRegularExpression(pattern: "<tr[^>]*>(.*?)</tr>", options: [.caseInsensitive, .dotMatchesLineSeparators])
+        guard let trRegex else { return hoursDict }
+        let trMatches = trRegex.matches(in: table, options: [], range: NSRange(location: 0, length: table.count))
+        for match in trMatches {
+            let trRange = Range(match.range(at: 1), in: table)!
+            let trSubstring = table[trRange]
+            let tr = String(trSubstring)
+            // Find <td>
+            let tdRegex = try? NSRegularExpression(pattern: "<td[^>]*>(.*?)</td>", options: [.caseInsensitive, .dotMatchesLineSeparators])
+            guard let tdRegex else { continue }
+            let tdMatches = tdRegex.matches(in: tr, options: [], range: NSRange(location: 0, length: tr.count))
+            if tdMatches.count >= 5 {
+                let nameRange = Range(tdMatches[0].range(at: 1), in: tr)!
+                let name = String(tr[nameRange]).trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "&nbsp;", with: "").replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+                let breakfastRange = Range(tdMatches[1].range(at: 1), in: tr)!
+                let breakfast = String(tr[breakfastRange]).trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "&nbsp;", with: "").replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression).replacingOccurrences(of: "a.m.", with: "am").replacingOccurrences(of: "p.m.", with: "pm")
+                let lunchRange = Range(tdMatches[2].range(at: 1), in: tr)!
+                let lunch = String(tr[lunchRange]).trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "&nbsp;", with: "").replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression).replacingOccurrences(of: "a.m.", with: "am").replacingOccurrences(of: "p.m.", with: "pm")
+                let dinnerRange = Range(tdMatches[3].range(at: 1), in: tr)!
+                let dinner = String(tr[dinnerRange]).trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "&nbsp;", with: "").replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression).replacingOccurrences(of: "a.m.", with: "am").replacingOccurrences(of: "p.m.", with: "pm")
+                let lateNightRange = Range(tdMatches[4].range(at: 1), in: tr)!
+                let lateNight = String(tr[lateNightRange]).trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "&nbsp;", with: "").replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression).replacingOccurrences(of: "a.m.", with: "am").replacingOccurrences(of: "p.m.", with: "pm")
+                let mealHours = MealHours(
+                    breakfast: breakfast.lowercased() == "closed" || breakfast.isEmpty ? nil : breakfast,
+                    lunch: lunch.lowercased() == "closed" || lunch.isEmpty ? nil : lunch,
+                    dinner: dinner.lowercased() == "closed" || dinner.isEmpty ? nil : dinner,
+                    lateNight: lateNight.lowercased() == "closed" || lateNight.isEmpty ? nil : lateNight
+                )
+                hoursDict[name.lowercased()] = mealHours
+            }
+        }
+        return hoursDict
     }
 }

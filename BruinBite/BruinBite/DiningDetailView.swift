@@ -36,6 +36,63 @@ struct DiningDetailView: View {
                             .foregroundColor(.gray)
                     }
                     
+                    if let hours = row.hours {
+                        VStack(spacing: 8) {
+                            if let breakfast = hours.breakfast {
+                                HStack {
+                                    Text("Breakfast")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(.white)
+                                    Spacer()
+                                    Text(breakfast)
+                                        .font(.system(size: 16))
+                                        .foregroundColor(.white)
+                                }
+                            }
+                            if let lunch = hours.lunch {
+                                HStack {
+                                    Text("Lunch")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(.white)
+                                    Spacer()
+                                    Text(lunch)
+                                        .font(.system(size: 16))
+                                        .foregroundColor(.white)
+                                }
+                            }
+                            if let dinner = hours.dinner {
+                                HStack {
+                                    Text("Dinner")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(.white)
+                                    Spacer()
+                                    Text(dinner)
+                                        .font(.system(size: 16))
+                                        .foregroundColor(.white)
+                                }
+                            }
+                            if let lateNight = hours.lateNight {
+                                HStack {
+                                    Text("Late Night")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(.white)
+                                    Spacer()
+                                    Text(lateNight)
+                                        .font(.system(size: 16))
+                                        .foregroundColor(.white)
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 8)
+                    } else {
+                        Text("Loading hours...")
+                            .font(.system(size: 16))
+                            .foregroundColor(.gray)
+                            .padding(.horizontal, 20)
+                            .padding(.top, 8)
+                    }
+                    
                     Spacer()
                     
                     // Navigate Button
