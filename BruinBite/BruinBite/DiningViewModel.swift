@@ -8,7 +8,6 @@ class DiningViewModel: ObservableObject {
     @Published var retail: [RowModel] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
-    @Published private var occupancyData: [String: WaitzPrediction] = [:]
 
     // MARK: Location
     let location = LocationManager()
@@ -17,7 +16,6 @@ class DiningViewModel: ObservableObject {
 
     // MARK: Services
     private let service = DiningService()
-    private let waitzService = WaitzService()
 
     // MARK: Row model (nested so views can reference DiningViewModel.RowModel)
     class RowModel: Identifiable, ObservableObject {
@@ -25,14 +23,12 @@ class DiningViewModel: ObservableObject {
         let name: String
         let hall: DiningHall
         let distanceMiles: Double?
-        let occupancy: WaitzPrediction?
         
-        init(id: String, name: String, hall: DiningHall, distanceMiles: Double?, occupancy: WaitzPrediction?) {
+        init(id: String, name: String, hall: DiningHall, distanceMiles: Double?) {
             self.id = id
             self.name = name
             self.hall = hall
             self.distanceMiles = distanceMiles
-            self.occupancy = occupancy
         }
     }
 
@@ -42,25 +38,8 @@ class DiningViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in self?.recomputeDistancesAndResort() }
             .store(in: &cancellables)
-        
-        // Start occupancy polling
-        startOccupancyPolling()
     }
     
-    private func startOccupancyPolling() {
-        Task {
-            while true {
-                do {
-                    self.occupancyData = try await waitzService.fetchOccupancy()
-                    self.recomputeDistancesAndResort() // This will rebuild rows with new occupancy
-                } catch {
-                    print("Failed to fetch occupancy: \(error)")
-                }
-                try await Task.sleep(for: .seconds(60))
-            }
-        }
-    }
-
     // MARK: - Public API
     func requestLocation() {
         location.request()
@@ -71,65 +50,60 @@ class DiningViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
 
-        Task {
-            defer { self.isLoading = false }
+        defer { self.isLoading = false }
 
-            do {
-                // Fetch hall lists
-                async let resHalls = service.fetchResidential()
-                async let shopHalls = service.fetchCampusRetail()
-                let (residentialHalls, campusRetail) = try await (resHalls, shopHalls)
+        do {
+            // Fetch hall lists
+            let residentialHalls = try service.fetchResidential()
+            let campusRetail = try service.fetchCampusRetail()
 
-                var resRows: [RowModel] = []
-                var retailRows: [RowModel] = []
+            var resRows: [RowModel] = []
+            var retailRows: [RowModel] = []
 
-                // Build rows per hall
-                for hall in residentialHalls {
-                    // distance
-                    var miles: Double? = nil
-                    if let origin = currentOrigin(), let coord = hall.coordinate {
-                        miles = DistanceCalculator.distance(from: origin, to: coord, unit: .miles)
-                    }
-
-                    // build row
-                    let row = RowModel(
-                        id: hall.id,
-                        name: hall.name,
-                        hall: hall,
-                        distanceMiles: miles,
-                        occupancy: occupancyData[hall.id]
-                    )
-                    resRows.append(row)
+            // Build rows per hall
+            for hall in residentialHalls {
+                // distance
+                var miles: Double? = nil
+                if let origin = currentOrigin(), let coord = hall.coordinate {
+                    miles = DistanceCalculator.distance(from: origin, to: coord, unit: .miles)
                 }
 
-                for hall in campusRetail {
-                    var miles: Double? = nil
-                    if let origin = currentOrigin(), let coord = hall.coordinate {
-                        miles = DistanceCalculator.distance(from: origin, to: coord, unit: .miles)
-                    }
-
-                    let row = RowModel(
-                        id: hall.id,
-                        name: hall.name,
-                        hall: hall,
-                        distanceMiles: miles,
-                        occupancy: occupancyData[hall.id]
-                    )
-                    retailRows.append(row)
-                }
-
-                sortByDistanceThenName(&resRows)
-                sortByDistanceThenName(&retailRows)
-
-                // Publish
-                self.residential = resRows
-                self.retail = retailRows
-
-            } catch {
-                self.errorMessage = "Failed to load dining data. Please try again."
-                self.residential = []
-                self.retail = []
+                // build row
+                let row = RowModel(
+                    id: hall.id,
+                    name: hall.name,
+                    hall: hall,
+                    distanceMiles: miles
+                )
+                resRows.append(row)
             }
+
+            for hall in campusRetail {
+                var miles: Double? = nil
+                if let origin = currentOrigin(), let coord = hall.coordinate {
+                    miles = DistanceCalculator.distance(from: origin, to: coord, unit: .miles)
+                }
+
+                let row = RowModel(
+                    id: hall.id,
+                    name: hall.name,
+                    hall: hall,
+                    distanceMiles: miles
+                )
+                retailRows.append(row)
+            }
+
+            sortByDistanceThenName(&resRows)
+            sortByDistanceThenName(&retailRows)
+
+            // Publish
+            self.residential = resRows
+            self.retail = retailRows
+
+        } catch {
+            self.errorMessage = "Failed to load dining data. Please try again."
+            self.residential = []
+            self.retail = []
         }
     }
 
@@ -149,7 +123,7 @@ class DiningViewModel: ObservableObject {
                     miles = DistanceCalculator.distance(from: origin, to: coord, unit: .miles)
                 }
                 return .init(id: r.id, name: r.name, hall: r.hall,
-                           distanceMiles: miles, occupancy: r.occupancy)
+                           distanceMiles: miles)
             }
         }
 
@@ -189,8 +163,7 @@ extension DiningViewModel.RowModel: Hashable {
         lhs.id == rhs.id &&
         lhs.name == rhs.name &&
         lhs.hall == rhs.hall &&
-        lhs.distanceMiles == rhs.distanceMiles &&
-        lhs.occupancy == rhs.occupancy
+        lhs.distanceMiles == rhs.distanceMiles
     }
     
     func hash(into hasher: inout Hasher) {
@@ -198,6 +171,5 @@ extension DiningViewModel.RowModel: Hashable {
         hasher.combine(name)
         hasher.combine(hall)
         hasher.combine(distanceMiles)
-        hasher.combine(occupancy)
     }
 }

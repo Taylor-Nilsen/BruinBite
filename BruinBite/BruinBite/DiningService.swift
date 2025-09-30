@@ -43,62 +43,42 @@ struct GPSOverrides {
 
 final class DiningService {
 
-    // MARK: Residential (UCLA Dining — short slugs)
-    func fetchResidential() async throws -> [DiningHall] {
+    // MARK: Residential
+    func fetchResidential() throws -> [DiningHall] {
         let halls: [DiningHall] = [
-            DiningHall(id: "BruinPlate",          name: "Bruin Plate",
-                       url: URL(string: "https://dining.ucla.edu/bruin-plate/"),
-                       type: .residential, coordinate: GPSOverrides.halls["BruinPlate"]),
-            DiningHall(id: "EpicuriaAtCovel",     name: "Epicuria at Covel",
-                       url: URL(string: "https://dining.ucla.edu/epicuria-at-covel/"),
-                       type: .residential, coordinate: GPSOverrides.halls["EpicuriaAtCovel"]),
-            DiningHall(id: "DeNeveDining",        name: "De Neve Dining",
-                       url: URL(string: "https://dining.ucla.edu/de-neve-dining/"),
-                       type: .residential, coordinate: GPSOverrides.halls["DeNeveDining"]),
-            DiningHall(id: "EpicuriaAtAckerman",  name: "Epicuria at Ackerman",
-                       url: URL(string: "https://dining.ucla.edu/epicuria-at-ackerman/"),
-                       type: .residential, coordinate: GPSOverrides.halls["EpicuriaAtAckerman"]),
-            DiningHall(id: "TheDrey",             name: "The Drey",
-                       url: URL(string: "https://dining.ucla.edu/the-drey/"),
-                       type: .residential, coordinate: GPSOverrides.halls["TheDrey"]),
-            DiningHall(id: "TheStudyAtHedrick",   name: "The Study at Hedrick",
-                       url: URL(string: "https://dining.ucla.edu/the-study-at-hedrick/"),
-                       type: .residential, coordinate: GPSOverrides.halls["TheStudyAtHedrick"]),
-            DiningHall(id: "Rendezvous",          name: "Rendezvous",
-                       url: URL(string: "https://dining.ucla.edu/rendezvous/"),
-                       type: .residential, coordinate: GPSOverrides.halls["Rendezvous"]),
-            DiningHall(id: "BruinCafe",           name: "Bruin Café",
-                       url: URL(string: "https://dining.ucla.edu/bruin-cafe/"),
-                       type: .residential, coordinate: GPSOverrides.halls["BruinCafe"]),
-            DiningHall(id: "Cafe1919",            name: "Café 1919",
-                       url: URL(string: "https://dining.ucla.edu/cafe-1919/"),
-                       type: .residential, coordinate: GPSOverrides.halls["Cafe1919"]),
-            DiningHall(id: "FEASTAtRieber",       name: "Feast at Rieber",
-                       url: URL(string: "https://dining.ucla.edu/feast-at-rieber/"),
-                       type: .residential, coordinate: GPSOverrides.halls["FEASTAtRieber"])
+            DiningHall(id: "BruinPlate", name: "Bruin Plate", type: .residential, coordinate: GPSOverrides.halls["BruinPlate"]),
+            DiningHall(id: "EpicuriaAtCovel", name: "Epicuria at Covel", type: .residential, coordinate: GPSOverrides.halls["EpicuriaAtCovel"]),
+            DiningHall(id: "DeNeveDining", name: "De Neve Dining", type: .residential, coordinate: GPSOverrides.halls["DeNeveDining"]),
+            DiningHall(id: "EpicuriaAtAckerman", name: "Epicuria at Ackerman", type: .residential, coordinate: GPSOverrides.halls["EpicuriaAtAckerman"]),
+            DiningHall(id: "TheDrey", name: "The Drey", type: .residential, coordinate: GPSOverrides.halls["TheDrey"]),
+            DiningHall(id: "TheStudyAtHedrick", name: "The Study at Hedrick", type: .residential, coordinate: GPSOverrides.halls["TheStudyAtHedrick"]),
+            DiningHall(id: "Rendezvous", name: "Rendezvous", type: .residential, coordinate: GPSOverrides.halls["Rendezvous"]),
+            DiningHall(id: "BruinCafe", name: "Bruin Café", type: .residential, coordinate: GPSOverrides.halls["BruinCafe"]),
+            DiningHall(id: "Cafe1919", name: "Café 1919", type: .residential, coordinate: GPSOverrides.halls["Cafe1919"]),
+            DiningHall(id: "FEASTAtRieber", name: "FEAST at Rieber", type: .residential, coordinate: GPSOverrides.halls["FEASTAtRieber"])
         ]
         return halls
     }
 
     // MARK: Campus retail (names only + coords)
-    func fetchCampusRetail() async throws -> [DiningHall] {
+    func fetchCampusRetail() throws -> [DiningHall] {
         let spots: [DiningHall] = [
-            DiningHall(id: "LollicupFresh",   name: "Lollicup Fresh", url: nil, type: .campusRetail, coordinate: GPSOverrides.campus["LollicupFresh"]),
-            DiningHall(id: "WetzelsPretzels", name: "Wetzel’s Pretzels", url: nil, type: .campusRetail, coordinate: GPSOverrides.campus["WetzelsPretzels"]),
-            DiningHall(id: "Sweetspot",       name: "Sweetspot", url: nil, type: .campusRetail, coordinate: GPSOverrides.campus["Sweetspot"]),
-            DiningHall(id: "PandaExpress",    name: "Panda Express", url: nil, type: .campusRetail, coordinate: GPSOverrides.campus["PandaExpress"]),
-            DiningHall(id: "Rubios",          name: "Rubio’s", url: nil, type: .campusRetail, coordinate: GPSOverrides.campus["Rubios"]),
-            DiningHall(id: "VeggieGrill",     name: "Veggie Grill", url: nil, type: .campusRetail, coordinate: GPSOverrides.campus["VeggieGrill"]),
-            DiningHall(id: "EpicuriaAck",     name: "Epicuria at Ackerman", url: nil, type: .campusRetail, coordinate: GPSOverrides.campus["EpicuriaAck"]),
-            DiningHall(id: "CORE",            name: "CORE (Ready-to-Eat)", url: nil, type: .campusRetail, coordinate: GPSOverrides.campus["CORE"]),
-            DiningHall(id: "JambaBlendid",    name: "Jamba by Blendid", url: nil, type: .campusRetail, coordinate: GPSOverrides.campus["JambaBlendid"]),
-            DiningHall(id: "KerckhoffCoffee", name: "Kerckhoff Coffee House", url: nil, type: .campusRetail, coordinate: GPSOverrides.campus["KerckhoffCoffee"]),
-            DiningHall(id: "NorthernLights",  name: "Northern Lights", url: nil, type: .campusRetail, coordinate: GPSOverrides.campus["NorthernLights"]),
-            DiningHall(id: "Cafe451",         name: "Cafe 451", url: nil, type: .campusRetail, coordinate: GPSOverrides.campus["Cafe451"]),
-            DiningHall(id: "LuValleCommons",  name: "Lu Valle Commons", url: nil, type: .campusRetail, coordinate: GPSOverrides.campus["LuValleCommons"]),
-            DiningHall(id: "CourtOfSciences", name: "Court of Sciences Student Center", url: nil, type: .campusRetail, coordinate: GPSOverrides.campus["CourtOfSciences"]),
-            DiningHall(id: "MusicCafe",       name: "Music Café", url: nil, type: .campusRetail, coordinate: GPSOverrides.campus["MusicCafe"]),
-            DiningHall(id: "SouthCampusFood", name: "South Campus Food Court", url: nil, type: .campusRetail, coordinate: GPSOverrides.campus["SouthCampusFood"])
+            DiningHall(id: "LollicupFresh",   name: "Lollicup Fresh", type: .campusRetail, coordinate: GPSOverrides.campus["LollicupFresh"]),
+            DiningHall(id: "WetzelsPretzels", name: "Wetzel’s Pretzels", type: .campusRetail, coordinate: GPSOverrides.campus["WetzelsPretzels"]),
+            DiningHall(id: "Sweetspot",       name: "Sweetspot", type: .campusRetail, coordinate: GPSOverrides.campus["Sweetspot"]),
+            DiningHall(id: "PandaExpress",    name: "Panda Express", type: .campusRetail, coordinate: GPSOverrides.campus["PandaExpress"]),
+            DiningHall(id: "Rubios",          name: "Rubio’s", type: .campusRetail, coordinate: GPSOverrides.campus["Rubios"]),
+            DiningHall(id: "VeggieGrill",     name: "Veggie Grill", type: .campusRetail, coordinate: GPSOverrides.campus["VeggieGrill"]),
+            DiningHall(id: "EpicuriaAck",     name: "Epicuria at Ackerman", type: .campusRetail, coordinate: GPSOverrides.campus["EpicuriaAck"]),
+            DiningHall(id: "CORE",            name: "CORE (Ready-to-Eat)", type: .campusRetail, coordinate: GPSOverrides.campus["CORE"]),
+            DiningHall(id: "JambaBlendid",    name: "Jamba by Blendid", type: .campusRetail, coordinate: GPSOverrides.campus["JambaBlendid"]),
+            DiningHall(id: "KerckhoffCoffee", name: "Kerckhoff Coffee House", type: .campusRetail, coordinate: GPSOverrides.campus["KerckhoffCoffee"]),
+            DiningHall(id: "NorthernLights",  name: "Northern Lights", type: .campusRetail, coordinate: GPSOverrides.campus["NorthernLights"]),
+            DiningHall(id: "Cafe451",         name: "Cafe 451", type: .campusRetail, coordinate: GPSOverrides.campus["Cafe451"]),
+            DiningHall(id: "LuValleCommons",  name: "Lu Valle Commons", type: .campusRetail, coordinate: GPSOverrides.campus["LuValleCommons"]),
+            DiningHall(id: "CourtOfSciences", name: "Court of Sciences Student Center", type: .campusRetail, coordinate: GPSOverrides.campus["CourtOfSciences"]),
+            DiningHall(id: "MusicCafe",       name: "Music Café", type: .campusRetail, coordinate: GPSOverrides.campus["MusicCafe"]),
+            DiningHall(id: "SouthCampusFood", name: "South Campus Food Court", type: .campusRetail, coordinate: GPSOverrides.campus["SouthCampusFood"])
         ]
         return spots
     }

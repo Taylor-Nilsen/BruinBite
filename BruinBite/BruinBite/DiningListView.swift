@@ -27,25 +27,21 @@ struct DiningListView: View {
                     VStack(spacing: 12) {
                         Text(err).multilineTextAlignment(.center)
                         Button("Retry") {
-                            Task {
-                                await vm.load()
-                            }
+                            vm.load()
                         }
                     }
                     .padding()
                 } else {
                     List {
-                        Section("Residential Dining") {
-                            ForEach(vm.residential) { row in
-                                NavigationLink(destination: DiningDetailView(row: row)) {
-                                    HallRow(row: row)
-                                }
+                        ForEach(vm.residential) { row in
+                            NavigationLink(destination: DiningDetailView(row: row)) {
+                                HallRow(row: row)
                             }
                         }
                     }
                     .listStyle(.insetGrouped)
                     .refreshable {
-                        await vm.load()
+                        vm.load()
                     }
                 }
                 
@@ -56,25 +52,21 @@ struct DiningListView: View {
                     VStack(spacing: 12) {
                         Text(err).multilineTextAlignment(.center)
                         Button("Retry") {
-                            Task {
-                                await vm.load()
-                            }
+                            vm.load()
                         }
                     }
                     .padding()
                 } else {
                     List {
-                        Section("Campus Retail") {
-                            ForEach(vm.retail) { row in
-                                NavigationLink(destination: CampusDetailView(row: row)) {
-                                    CampusRow(row: row)
-                                }
+                        ForEach(vm.retail) { row in
+                            NavigationLink(destination: CampusDetailView(row: row)) {
+                                CampusRow(row: row)
                             }
                         }
                     }
                     .listStyle(.insetGrouped)
                     .refreshable {
-                        await vm.load()
+                        vm.load()
                     }
                 }
             }
@@ -82,7 +74,7 @@ struct DiningListView: View {
         .navigationTitle(mode == .halls ? "Halls" : "Campus")
         .task {
             vm.requestLocation()
-            await vm.load()
+            vm.load()
         }
     }
 }
@@ -142,32 +134,28 @@ private class PreviewDiningViewModel: DiningViewModel {
             RowModel(
                 id: "BruinPlate",
                 name: "Bruin Plate",
-                hall: DiningHall(id: "BruinPlate", name: "Bruin Plate", url: nil, type: .residential, coordinate: GeoPoint(lat: 34.0720, lon: -118.4521)),
-                distanceMiles: 0.2,
-                occupancy: WaitzPrediction(percentage: 75, busyness: "busy")
+                hall: DiningHall(id: "BruinPlate", name: "Bruin Plate", type: .residential, coordinate: GeoPoint(lat: 34.0720, lon: -118.4521)),
+                distanceMiles: 0.2
             ),
             RowModel(
                 id: "DeNeveDining",
                 name: "De Neve Dining",
-                hall: DiningHall(id: "DeNeveDining", name: "De Neve Dining", url: nil, type: .residential, coordinate: GeoPoint(lat: 34.0720, lon: -118.4521)),
-                distanceMiles: 0.3,
-                occupancy: nil
+                hall: DiningHall(id: "DeNeveDining", name: "De Neve Dining", type: .residential, coordinate: GeoPoint(lat: 34.0720, lon: -118.4521)),
+                distanceMiles: 0.3
             )
         ]
         self.retail = [
             RowModel(
                 id: "CORE",
                 name: "CORE (Ready-to-Eat)",
-                hall: DiningHall(id: "CORE", name: "CORE (Ready-to-Eat)", url: nil, type: .campusRetail, coordinate: GeoPoint(lat: 34.0720, lon: -118.4521)),
-                distanceMiles: 0.1,
-                occupancy: nil
+                hall: DiningHall(id: "CORE", name: "CORE (Ready-to-Eat)", type: .campusRetail, coordinate: GeoPoint(lat: 34.0720, lon: -118.4521)),
+                distanceMiles: 0.1
             ),
             RowModel(
                 id: "PandaExpress",
                 name: "Panda Express",
-                hall: DiningHall(id: "PandaExpress", name: "Panda Express", url: nil, type: .campusRetail, coordinate: GeoPoint(lat: 34.0720, lon: -118.4521)),
-                distanceMiles: 0.15,
-                occupancy: nil
+                hall: DiningHall(id: "PandaExpress", name: "Panda Express", type: .campusRetail, coordinate: GeoPoint(lat: 34.0720, lon: -118.4521)),
+                distanceMiles: 0.15
             )
         ]
     }

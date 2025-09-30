@@ -77,9 +77,8 @@ struct CampusDetailView: View {
         CampusDetailView(row: DiningViewModel.RowModel(
             id: "CORE",
             name: "CORE (Ready-to-Eat)",
-            hall: DiningHall(id: "CORE", name: "CORE (Ready-to-Eat)", url: nil, type: .campusRetail, coordinate: GeoPoint(lat: 34.0720, lon: -118.4521)),
-            distanceMiles: 0.1,
-            occupancy: nil
+            hall: DiningHall(id: "CORE", name: "CORE (Ready-to-Eat)", type: .campusRetail, coordinate: GeoPoint(lat: 34.0720, lon: -118.4521)),
+            distanceMiles: 0.1
         ))
     }
 }
