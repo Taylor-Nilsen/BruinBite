@@ -88,7 +88,7 @@ final class LibraryDataService {
             
             if !isSub && result[id]!.contains(where: { $0.name == "Library" }) { continue }
             
-            let serviceName = isSub ? (name ?? "") : "Library"
+            let serviceName = isSub ? cleanName(name ?? "") : "Library"
             
             if serviceName == "Library" && result[id]!.contains(where: { $0.name == "Library" }) { continue }
             
@@ -102,6 +102,16 @@ final class LibraryDataService {
         }
         
         return result
+    }
+    
+    private func cleanName(_ name: String) -> String {
+        if let openParen = name.firstIndex(of: "("),
+           let closeParen = name.firstIndex(of: ")"),
+           openParen < closeParen {
+            let beforeParen = name[..<openParen]
+            return String(beforeParen).trimmingCharacters(in: .whitespaces)
+        }
+        return name
     }
     
     private func mapNameToId(_ name: String) -> String {
