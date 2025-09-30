@@ -95,47 +95,61 @@ final class DiningService {
 
     func parseHours(from html: String) -> [String: MealHours] {
         var hoursDict = [String: MealHours]()
-        // Find the Hours of Operation section
-        guard let hoursStart = html.range(of: "Hours of Operation") else { return hoursDict }
-        let htmlFromHours = html[hoursStart.lowerBound...]
-        // Find the table
-        guard let tableStart = htmlFromHours.range(of: "<table") else { return hoursDict }
-        let tableEndRange = htmlFromHours[tableStart.lowerBound...].range(of: "</table>")
-        let tableEnd = tableEndRange?.lowerBound ?? htmlFromHours.endIndex
-        let tableSubstring = htmlFromHours[tableStart.lowerBound..<tableEnd]
-        let table = String(tableSubstring)
-        // Find all <tr>
-        let trRegex = try? NSRegularExpression(pattern: "<tr[^>]*>(.*?)</tr>", options: [.caseInsensitive, .dotMatchesLineSeparators])
-        guard let trRegex else { return hoursDict }
-        let trMatches = trRegex.matches(in: table, options: [], range: NSRange(location: 0, length: table.count))
-        for match in trMatches {
-            let trRange = Range(match.range(at: 1), in: table)!
-            let trSubstring = table[trRange]
-            let tr = String(trSubstring)
-            // Find <td>
-            let tdRegex = try? NSRegularExpression(pattern: "<td[^>]*>(.*?)</td>", options: [.caseInsensitive, .dotMatchesLineSeparators])
-            guard let tdRegex else { continue }
-            let tdMatches = tdRegex.matches(in: tr, options: [], range: NSRange(location: 0, length: tr.count))
-            if tdMatches.count >= 5 {
-                let nameRange = Range(tdMatches[0].range(at: 1), in: tr)!
-                let name = String(tr[nameRange]).trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "&nbsp;", with: "").replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
-                let breakfastRange = Range(tdMatches[1].range(at: 1), in: tr)!
-                let breakfast = String(tr[breakfastRange]).trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "&nbsp;", with: "").replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression).replacingOccurrences(of: "a.m.", with: "am").replacingOccurrences(of: "p.m.", with: "pm")
-                let lunchRange = Range(tdMatches[2].range(at: 1), in: tr)!
-                let lunch = String(tr[lunchRange]).trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "&nbsp;", with: "").replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression).replacingOccurrences(of: "a.m.", with: "am").replacingOccurrences(of: "p.m.", with: "pm")
-                let dinnerRange = Range(tdMatches[3].range(at: 1), in: tr)!
-                let dinner = String(tr[dinnerRange]).trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "&nbsp;", with: "").replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression).replacingOccurrences(of: "a.m.", with: "am").replacingOccurrences(of: "p.m.", with: "pm")
-                let lateNightRange = Range(tdMatches[4].range(at: 1), in: tr)!
-                let lateNight = String(tr[lateNightRange]).trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "&nbsp;", with: "").replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression).replacingOccurrences(of: "a.m.", with: "am").replacingOccurrences(of: "p.m.", with: "pm")
-                let mealHours = MealHours(
-                    breakfast: breakfast.lowercased() == "closed" || breakfast.isEmpty ? nil : breakfast,
-                    lunch: lunch.lowercased() == "closed" || lunch.isEmpty ? nil : lunch,
-                    dinner: dinner.lowercased() == "closed" || dinner.isEmpty ? nil : dinner,
-                    lateNight: lateNight.lowercased() == "closed" || lateNight.isEmpty ? nil : lateNight
-                )
-                hoursDict[name.lowercased()] = mealHours
+        
+        // Find all tables
+        let tableRegex = try? NSRegularExpression(pattern: "<table[^>]*>(.*?)</table>", options: [.caseInsensitive, .dotMatchesLineSeparators])
+        guard let tableRegex else { print("DEBUG: failed to create table regex"); return hoursDict }
+        let tableMatches = tableRegex.matches(in: html, options: [], range: NSRange(location: 0, length: html.count))
+        print("DEBUG: found \(tableMatches.count) tables")
+        
+        for tableMatch in tableMatches {
+            let tableRange = Range(tableMatch.range(at: 1), in: html)!
+            let table = String(html[tableRange])
+            print("DEBUG: parsing table with length \(table.count)")
+            
+            // Find all <tr>
+            let trRegex = try? NSRegularExpression(pattern: "<tr[^>]*>(.*?)</tr>", options: [.caseInsensitive, .dotMatchesLineSeparators])
+            guard let trRegex else { continue }
+            let trMatches = trRegex.matches(in: table, options: [], range: NSRange(location: 0, length: table.count))
+            print("DEBUG: found \(trMatches.count) rows in table")
+            
+            for match in trMatches {
+                let trRange = Range(match.range(at: 1), in: table)!
+                let trSubstring = table[trRange]
+                let tr = String(trSubstring)
+                // Find <td> or <th>
+                let tdRegex = try? NSRegularExpression(pattern: "<t[dh][^>]*>(.*?)</t[dh]>", options: [.caseInsensitive, .dotMatchesLineSeparators])
+                guard let tdRegex else { continue }
+                let tdMatches = tdRegex.matches(in: tr, options: [], range: NSRange(location: 0, length: tr.count))
+                print("DEBUG: tdMatches.count = \(tdMatches.count) for tr: \(tr.prefix(200))")
+                if tdMatches.count >= 4 {
+                    let nameRange = Range(tdMatches[0].range(at: 1), in: tr)!
+                    let name = String(tr[nameRange]).trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "&nbsp;", with: " ").replacingOccurrences(of: "&#160;", with: " ").replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression).replacingOccurrences(of: "&eacute;", with: "é").replacingOccurrences(of: "&#39;", with: "'").replacingOccurrences(of: "’", with: "'").replacingOccurrences(of: "é", with: "e").lowercased().replacingOccurrences(of: "[^a-z]", with: "", options: .regularExpression)
+                    let breakfastRange = Range(tdMatches[1].range(at: 1), in: tr)!
+                    let breakfast = String(tr[breakfastRange]).trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "&nbsp;", with: "").replacingOccurrences(of: "&#160;", with: "").replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression).replacingOccurrences(of: "a.m.", with: "am").replacingOccurrences(of: "p.m.", with: "pm")
+                    let lunchRange = Range(tdMatches[2].range(at: 1), in: tr)!
+                    let lunch = String(tr[lunchRange]).trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "&nbsp;", with: "").replacingOccurrences(of: "&#160;", with: "").replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression).replacingOccurrences(of: "a.m.", with: "am").replacingOccurrences(of: "p.m.", with: "pm")
+                    let dinnerRange = Range(tdMatches[3].range(at: 1), in: tr)!
+                    let dinner = String(tr[dinnerRange]).trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "&nbsp;", with: "").replacingOccurrences(of: "&#160;", with: "").replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression).replacingOccurrences(of: "a.m.", with: "am").replacingOccurrences(of: "p.m.", with: "pm")
+                    let lateNight: String?
+                    if tdMatches.count >= 5 {
+                        let lateNightRange = Range(tdMatches[4].range(at: 1), in: tr)!
+                        lateNight = String(tr[lateNightRange]).trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "&nbsp;", with: "").replacingOccurrences(of: "&#160;", with: "").replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression).replacingOccurrences(of: "a.m.", with: "am").replacingOccurrences(of: "p.m.", with: "pm")
+                    } else {
+                        lateNight = nil
+                    }
+                    let mealHours = MealHours(
+                        breakfast: breakfast.lowercased() == "closed" || breakfast.isEmpty ? nil : breakfast,
+                        lunch: lunch.lowercased() == "closed" || lunch.isEmpty ? nil : lunch,
+                        dinner: dinner.lowercased() == "closed" || dinner.isEmpty ? nil : dinner,
+                        lateNight: lateNight?.lowercased() == "closed" || lateNight?.isEmpty == true ? nil : lateNight
+                    )
+                    hoursDict[name] = mealHours
+                    print("DEBUG: added hours for \(name): \(mealHours)")
+                }
             }
         }
+        print("DEBUG: final parsed hoursDict = \(hoursDict)")
         return hoursDict
     }
 }

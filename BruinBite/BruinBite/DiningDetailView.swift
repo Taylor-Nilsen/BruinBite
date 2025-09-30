@@ -36,9 +36,9 @@ struct DiningDetailView: View {
                             .foregroundColor(.gray)
                     }
                     
-                    if let hours = row.hours {
+                    if let hoursData = row.diningHours {
                         VStack(spacing: 8) {
-                            if let breakfast = hours.breakfast {
+                            if let breakfast = hoursData.breakfast {
                                 HStack {
                                     Text("Breakfast")
                                         .font(.system(size: 16))
@@ -49,7 +49,7 @@ struct DiningDetailView: View {
                                         .foregroundColor(.white)
                                 }
                             }
-                            if let lunch = hours.lunch {
+                            if let lunch = hoursData.lunch {
                                 HStack {
                                     Text("Lunch")
                                         .font(.system(size: 16))
@@ -60,7 +60,7 @@ struct DiningDetailView: View {
                                         .foregroundColor(.white)
                                 }
                             }
-                            if let dinner = hours.dinner {
+                            if let dinner = hoursData.dinner {
                                 HStack {
                                     Text("Dinner")
                                         .font(.system(size: 16))
@@ -71,7 +71,7 @@ struct DiningDetailView: View {
                                         .foregroundColor(.white)
                                 }
                             }
-                            if let lateNight = hours.lateNight {
+                            if let lateNight = hoursData.lateNight {
                                 HStack {
                                     Text("Late Night")
                                         .font(.system(size: 16))

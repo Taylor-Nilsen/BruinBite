@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import SwiftUI
 
 @MainActor
 class DiningViewModel: ObservableObject {
@@ -23,14 +24,120 @@ class DiningViewModel: ObservableObject {
         let name: String
         let hall: DiningHall
         let distanceMiles: Double?
-        @Published var hours: MealHours?
+        @Published var isOpen: Bool = false
+        @Published var statusText: String? = "loading"
+        @Published var statusColor: Color = .gray
+        
+        private var isUpdating = false
         
         init(id: String, name: String, hall: DiningHall, distanceMiles: Double?, hours: MealHours? = nil) {
             self.id = id
             self.name = name
             self.hall = hall
             self.distanceMiles = distanceMiles
-            self.hours = hours
+            self.diningHours = hours
+        }
+        
+        @Published var diningHours: MealHours? {
+            didSet {
+                if isUpdating { return }
+                isUpdating = true
+                if var h = diningHours {
+                    updateStatus(with: &h)
+                    self.diningHours = h
+                }
+                isUpdating = false
+            }
+        }
+        
+        func updateStatus(with hours: inout MealHours) {
+            let now = Date()
+            var intervals: [(start: Date, end: Date)] = []
+            
+            let formatter1 = DateFormatter()
+            formatter1.dateFormat = "h:mm a"
+            formatter1.locale = Locale(identifier: "en_US_POSIX")
+            let formatter2 = DateFormatter()
+            formatter2.dateFormat = "h:mma"
+            formatter2.locale = Locale(identifier: "en_US_POSIX")
+            let formatter24 = DateFormatter()
+            formatter24.dateFormat = "HH:mm"
+            formatter24.locale = Locale(identifier: "en_US_POSIX")
+            
+            func parseTime(_ timeStr: String) -> Date? {
+                return formatter1.date(from: timeStr) ?? formatter2.date(from: timeStr)
+            }
+            
+            let calendar = Calendar.current
+            let today = calendar.startOfDay(for: now)
+            
+            func parseTimeRange(_ rangeStr: String) -> ((Date, Date), String)? {
+                let parts = rangeStr.components(separatedBy: CharacterSet(charactersIn: "-")).map { $0.trimmingCharacters(in: .whitespaces) }
+                if parts.count == 2,
+                   let startTime = parseTime(parts[0]),
+                   let endTime = parseTime(parts[1]) {
+                    let start = calendar.date(bySettingHour: calendar.component(.hour, from: startTime),
+                                              minute: calendar.component(.minute, from: startTime),
+                                              second: 0, of: today)!
+                    var end = calendar.date(bySettingHour: calendar.component(.hour, from: endTime),
+                                            minute: calendar.component(.minute, from: endTime),
+                                            second: 0, of: today)!
+                    if end < start {
+                        // Assume late night spans to next day
+                        end = calendar.date(byAdding: .day, value: 1, to: end)!
+                    }
+                    let startStr = formatter24.string(from: start)
+                    let endStr = formatter24.string(from: end)
+                    let formatted = "\(startStr) - \(endStr)"
+                    return ((start, end), formatted)
+                }
+                return nil
+            }
+            
+            if let breakfast = hours.breakfast, let result = parseTimeRange(breakfast) {
+                intervals.append(result.0)
+                hours.breakfast = result.1
+            }
+            if let lunch = hours.lunch, let result = parseTimeRange(lunch) {
+                intervals.append(result.0)
+                hours.lunch = result.1
+            }
+            if let dinner = hours.dinner, let result = parseTimeRange(dinner) {
+                intervals.append(result.0)
+                hours.dinner = result.1
+            }
+            if let lateNight = hours.lateNight, let result = parseTimeRange(lateNight) {
+                intervals.append(result.0)
+                hours.lateNight = result.1
+            }
+            
+            intervals.sort { $0.start < $1.start }
+            print("DEBUG: intervals = \(intervals.map { (formatter24.string(from: $0.start), formatter24.string(from: $0.end)) })")
+            print("DEBUG: now = \(formatter24.string(from: now))")
+            
+            if let currentInterval = intervals.first(where: { now >= $0.start && now <= $0.end }) {
+                // Open
+                isOpen = true
+                let endStr = formatter24.string(from: currentInterval.end)
+                statusText = endStr
+                statusColor = .green
+                print("DEBUG: Open until \(endStr)")
+            } else {
+                // Closed, find next opening
+                if let nextInterval = intervals.first(where: { $0.start > now }) {
+                    isOpen = false
+                    let startStr = formatter24.string(from: nextInterval.start)
+                    statusText = startStr
+                    statusColor = .red
+                    print("DEBUG: Closed, opens at \(startStr)")
+                } else {
+                    // No more today
+                    isOpen = false
+                    statusText = "closed"
+                    statusColor = .red
+                    print("DEBUG: Closed, no more openings today")
+                }
+            }
         }
     }
 
@@ -131,7 +238,7 @@ class DiningViewModel: ObservableObject {
                     miles = DistanceCalculator.distance(from: origin, to: coord, unit: .miles)
                 }
                 return .init(id: r.id, name: r.name, hall: r.hall,
-                           distanceMiles: miles, hours: r.hours)
+                           distanceMiles: miles, hours: r.diningHours)
             }
         }
 
@@ -144,16 +251,26 @@ class DiningViewModel: ObservableObject {
     private func fetchHours() async {
         do {
             let html = try await service.fetchHTML()
+            print("DEBUG: HTML length: \(html.count)")
+            print("DEBUG: HTML prefix: \(html.prefix(1000))")
             let hoursDict = service.parseHours(from: html)
+            print("DEBUG: hoursDict = \(hoursDict)")
             await MainActor.run {
                 for row in self.residential {
-                    row.hours = hoursDict[row.name.lowercased()]
+                    let key = row.name.lowercased().replacingOccurrences(of: "é", with: "e").replacingOccurrences(of: "’", with: "'").replacingOccurrences(of: "[^a-z]", with: "", options: .regularExpression)
+                    let hours = hoursDict[key]
+                    print("DEBUG: setting hours for \(row.name) (key: \(key)): \(hours)")
+                    row.diningHours = hours
                 }
                 for row in self.retail {
-                    row.hours = hoursDict[row.name.lowercased()]
+                    let key = row.name.lowercased().replacingOccurrences(of: "é", with: "e").replacingOccurrences(of: "’", with: "'").replacingOccurrences(of: "[^a-z]", with: "", options: .regularExpression)
+                    let hours = hoursDict[key]
+                    print("DEBUG: setting hours for \(row.name) (key: \(key)): \(hours)")
+                    row.diningHours = hours
                 }
             }
         } catch {
+            print("DEBUG: Error fetching hours: \(error)")
             // Optionally set error, but for now ignore
         }
     }

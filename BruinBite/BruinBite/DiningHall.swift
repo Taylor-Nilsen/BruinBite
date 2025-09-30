@@ -7,10 +7,10 @@ public enum LocationType: String, Codable, Hashable {
 }
 
 public struct MealHours: Codable, Hashable {
-    public let breakfast: String?
-    public let lunch: String?
-    public let dinner: String?
-    public let lateNight: String?
+    public var breakfast: String?
+    public var lunch: String?
+    public var dinner: String?
+    public var lateNight: String?
 }
 
 public struct DiningHall: Identifiable, Hashable, Codable {

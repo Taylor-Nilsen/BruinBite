@@ -32,10 +32,33 @@ struct DiningListView: View {
                     }
                     .padding()
                 } else {
+                    let openHalls = vm.residential.filter { $0.isOpen }.sorted {
+                        let a = $0.distanceMiles ?? Double.greatestFiniteMagnitude
+                        let b = $1.distanceMiles ?? Double.greatestFiniteMagnitude
+                        return a < b
+                    }
+                    let closedHalls = vm.residential.filter { !$0.isOpen }.sorted {
+                        let a = $0.distanceMiles ?? Double.greatestFiniteMagnitude
+                        let b = $1.distanceMiles ?? Double.greatestFiniteMagnitude
+                        return a < b
+                    }
                     List {
-                        ForEach(vm.residential) { row in
-                            NavigationLink(destination: DiningDetailView(row: row)) {
-                                HallRow(row: row)
+                        if !openHalls.isEmpty {
+                            Section(header: Text("Open")) {
+                                ForEach(openHalls) { row in
+                                    NavigationLink(destination: DiningDetailView(row: row)) {
+                                        HallRow(row: row)
+                                    }
+                                }
+                            }
+                        }
+                        if !closedHalls.isEmpty {
+                            Section(header: Text("Closed")) {
+                                ForEach(closedHalls) { row in
+                                    NavigationLink(destination: DiningDetailView(row: row)) {
+                                        HallRow(row: row)
+                                    }
+                                }
                             }
                         }
                     }
@@ -86,10 +109,15 @@ private struct HallRow: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .firstTextBaseline) {
+            HStack(alignment: .center) {
                 Text(row.name)
                     .appFont(.headline)
-                Spacer(minLength: 12)
+                Spacer()
+                if let statusText = row.statusText {
+                    Text(statusText)
+                        .appFont(.subheadline)
+                        .foregroundColor(row.statusColor)
+                }
             }
             
             if let distance = row.distanceMiles {
@@ -106,10 +134,15 @@ private struct CampusRow: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .firstTextBaseline) {
+            HStack(alignment: .center) {
                 Text(row.name)
                     .appFont(.headline)
-                Spacer(minLength: 12)
+                Spacer()
+                if let statusText = row.statusText {
+                    Text(statusText)
+                        .appFont(.subheadline)
+                        .foregroundColor(row.statusColor)
+                }
             }
             
             if let distance = row.distanceMiles {
