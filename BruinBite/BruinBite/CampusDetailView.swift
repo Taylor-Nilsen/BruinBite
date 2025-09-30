@@ -5,22 +5,6 @@ struct CampusDetailView: View {
     let row: DiningViewModel.RowModel
     @Environment(\.dismiss) private var dismiss
     
-    private func timeString(from date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "H:mm"
-        return formatter.string(from: date)
-    }
-    
-    private func formatOperatingHours() -> String {
-        guard let windows = row.todayWindows?.intervals else { return "Closed" }
-        
-        if let firstWindow = windows.min(by: { $0.start < $1.start }),
-           let lastWindow = windows.max(by: { $0.end < $1.end }) {
-            return "\(timeString(from: firstWindow.start)) - \(timeString(from: lastWindow.end))"
-        }
-        return "Closed"
-    }
-    
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
@@ -50,11 +34,6 @@ struct CampusDetailView: View {
                             .foregroundColor(.gray)
                             .monospacedDigit()
                     }
-                    
-                    Text(formatOperatingHours())
-                        .font(.system(size: 37, weight: .bold))
-                        .foregroundColor(row.openNow ? .green : .red)
-                        .monospacedDigit()
                 }
                 .padding(.top, -20)
                 
@@ -68,16 +47,23 @@ struct CampusDetailView: View {
                         mapItem.openInMaps(launchOptions: [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving])
                     }
                 }) {
-                    Text("Navigate")
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 20)
-                                .fill(Color.blue)
-                        )
-                        .padding(.horizontal)
+                    HStack(spacing: 8) {
+                        Image(systemName: "location.fill")
+                            .font(.system(size: 18, weight: .semibold))
+                        Text("Navigate")
+                            .appFont(.title3)
+                            .fontWeight(.semibold)
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .padding(.horizontal, 24)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color.blue)
+                            .shadow(color: Color.blue.opacity(0.3), radius: 8, x: 0, y: 4)
+                    )
+                    .padding(.horizontal, 24)
                 }
                 .padding(.bottom, 40)
             }
@@ -88,24 +74,12 @@ struct CampusDetailView: View {
 
 #Preview {
     NavigationStack {
-        let now = Date()
-        let retailWindow = ServiceWindow(
-            start: Calendar.current.date(bySettingHour: 7, minute: 0, second: 0, of: now)!,
-            end: Calendar.current.date(bySettingHour: 22, minute: 0, second: 0, of: now)!
-        )
-        let retailWindows = DayWindows(date: now, intervals: [retailWindow])
-        
         CampusDetailView(row: DiningViewModel.RowModel(
             id: "CORE",
             name: "CORE (Ready-to-Eat)",
             hall: DiningHall(id: "CORE", name: "CORE (Ready-to-Eat)", url: nil, type: .campusRetail, coordinate: GeoPoint(lat: 34.0720, lon: -118.4521)),
-            openNow: true,
-            currentMeal: nil,
-            nextChangeAt: Date().addingTimeInterval(14400),
-            nextChangeType: .close,
             distanceMiles: 0.1,
-            occupancy: nil,
-            todayWindows: retailWindows
+            occupancy: nil
         ))
     }
 }

@@ -1,20 +1,11 @@
 import SwiftUI
 import MapKit
 
+/// Detailed card view for a dining hall
+/// This view appears after tapping an entry in the list
 struct DiningDetailView: View {
-    let row: DiningViewModel.RowModel
+    @ObservedObject var row: DiningViewModel.RowModel
     @Environment(\.dismiss) private var dismiss
-    
-    private func timeString(from date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "H:mm"
-        return formatter.string(from: date)
-    }
-    
-    private func formatMealWindow(_ window: ServiceWindow) -> String {
-        let label = window.label ?? "Service"
-        return "\(label): \(timeString(from: window.start)) - \(timeString(from: window.end))"
-    }
     
     var body: some View {
         ZStack {
@@ -46,13 +37,10 @@ struct DiningDetailView: View {
                             .monospacedDigit()
                     }
                     
-                    VStack(spacing: 8) {
-                        ForEach(row.todayWindows?.intervals.sorted(by: { $0.start < $1.start }) ?? [], id: \.start) { window in
-                            Text(formatMealWindow(window))
-                                .font(.system(size: 25, weight: .bold))
-                                .foregroundColor(window.label == row.currentMeal ? .green : .red)
-                                .monospacedDigit()
-                        }
+                    // Occupancy if available
+                    if let occupancy = row.occupancy {
+                        Text("Occupancy: \(occupancy.busyness) (\(occupancy.percentage)%)")
+                            .foregroundColor(.white)
                     }
                 }
                 .padding(.top, -20)
@@ -67,16 +55,23 @@ struct DiningDetailView: View {
                         mapItem.openInMaps(launchOptions: [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving])
                     }
                 }) {
-                    Text("Navigate")
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 20)
-                                .fill(Color.blue)
-                        )
-                        .padding(.horizontal)
+                    HStack(spacing: 8) {
+                        Image(systemName: "location.fill")
+                            .font(.system(size: 18, weight: .semibold))
+                        Text("Navigate")
+                            .appFont(.title3)
+                            .fontWeight(.semibold)
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .padding(.horizontal, 24)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color.blue)
+                            .shadow(color: Color.blue.opacity(0.3), radius: 8, x: 0, y: 4)
+                    )
+                    .padding(.horizontal, 24)
                 }
                 .padding(.bottom, 40)
             }
@@ -85,38 +80,55 @@ struct DiningDetailView: View {
     }
 }
 
+struct MenuItemRow: View {
+    let item: MenuItem
+    let isLastInSection: Bool
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(item.name)
+                    .foregroundColor(.white)
+                    .font(.body)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Spacer()
+
+                // Dietary indicators
+                HStack(spacing: 6) {
+                    if item.isVegan {
+                        Image(systemName: "leaf.fill")
+                            .foregroundColor(.green)
+                            .font(.caption)
+                    } else if item.isVegetarian {
+                        Image(systemName: "leaf")
+                            .foregroundColor(.green)
+                            .font(.caption)
+                    }
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 12)
+            
+            // Only show separator if not the last item in section
+            if !isLastInSection {
+                Rectangle()
+                    .fill(Color.gray.opacity(0.2))
+                    .frame(height: 0.5)
+                    .padding(.horizontal, 12)
+            }
+        }
+    }
+}
+
 #Preview {
     NavigationStack {
-        let now = Date()
-        let breakfast = ServiceWindow(
-            start: Calendar.current.date(bySettingHour: 7, minute: 0, second: 0, of: now)!,
-            end: Calendar.current.date(bySettingHour: 10, minute: 0, second: 0, of: now)!,
-            label: "Breakfast"
-        )
-        let lunch = ServiceWindow(
-            start: Calendar.current.date(bySettingHour: 11, minute: 0, second: 0, of: now)!,
-            end: Calendar.current.date(bySettingHour: 14, minute: 0, second: 0, of: now)!,
-            label: "Lunch"
-        )
-        let dinner = ServiceWindow(
-            start: Calendar.current.date(bySettingHour: 17, minute: 0, second: 0, of: now)!,
-            end: Calendar.current.date(bySettingHour: 20, minute: 0, second: 0, of: now)!,
-            label: "Dinner"
-        )
-        
-        let residentialWindows = DayWindows(date: now, intervals: [breakfast, lunch, dinner])
-        
         DiningDetailView(row: DiningViewModel.RowModel(
             id: "BruinPlate",
             name: "Bruin Plate",
             hall: DiningHall(id: "BruinPlate", name: "Bruin Plate", url: nil, type: .residential, coordinate: GeoPoint(lat: 34.0720, lon: -118.4521)),
-            openNow: true,
-            currentMeal: "Dinner",
-            nextChangeAt: Date().addingTimeInterval(3600),
-            nextChangeType: .close,
             distanceMiles: 0.2,
-            occupancy: WaitzPrediction(percentage: 75, busyness: "busy"),
-            todayWindows: residentialWindows
+            occupancy: WaitzPrediction(percentage: 75, busyness: "busy")
         ))
     }
 }

@@ -1,10 +1,13 @@
 import SwiftUI
 
+/// Represents the two main tabs in the dining section
 enum DiningListMode {
     case halls
     case campus
 }
 
+/// Main list view containing dining hall entries
+/// Each row in the list is called an "entry" and tapping it opens a "card" view
 struct DiningListView: View {
     @StateObject private var vm: DiningViewModel
     let mode: DiningListMode
@@ -18,9 +21,9 @@ struct DiningListView: View {
         Group {
             switch mode {
             case .halls:
-                if vm.isLoading && vm.residentialOpen.isEmpty && vm.residentialClosed.isEmpty {
+                if vm.isLoading && vm.residential.isEmpty {
                     ProgressView("Loading…").padding()
-                } else if let err = vm.errorMessage, vm.residentialOpen.isEmpty && vm.residentialClosed.isEmpty {
+                } else if let err = vm.errorMessage, vm.residential.isEmpty {
                     VStack(spacing: 12) {
                         Text(err).multilineTextAlignment(.center)
                         Button("Retry") {
@@ -32,21 +35,10 @@ struct DiningListView: View {
                     .padding()
                 } else {
                     List {
-                        if !vm.residentialOpen.isEmpty {
-                            Section("Open Now") {
-                                ForEach(vm.residentialOpen) { row in
-                                    NavigationLink(destination: DiningDetailView(row: row)) {
-                                        HallRow(row: row)
-                                    }
-                                }
-                            }
-                        }
-                        if !vm.residentialClosed.isEmpty {
-                            Section("Closed") {
-                                ForEach(vm.residentialClosed) { row in
-                                    NavigationLink(destination: DiningDetailView(row: row)) {
-                                        HallRow(row: row)
-                                    }
+                        Section("Residential Dining") {
+                            ForEach(vm.residential) { row in
+                                NavigationLink(destination: DiningDetailView(row: row)) {
+                                    HallRow(row: row)
                                 }
                             }
                         }
@@ -58,9 +50,9 @@ struct DiningListView: View {
                 }
                 
             case .campus:
-                if vm.isLoading && vm.retailOpen.isEmpty && vm.retailClosed.isEmpty {
+                if vm.isLoading && vm.retail.isEmpty {
                     ProgressView("Loading…").padding()
-                } else if let err = vm.errorMessage, vm.retailOpen.isEmpty && vm.retailClosed.isEmpty {
+                } else if let err = vm.errorMessage, vm.retail.isEmpty {
                     VStack(spacing: 12) {
                         Text(err).multilineTextAlignment(.center)
                         Button("Retry") {
@@ -72,21 +64,10 @@ struct DiningListView: View {
                     .padding()
                 } else {
                     List {
-                        if !vm.retailOpen.isEmpty {
-                            Section("Open Now") {
-                                ForEach(vm.retailOpen) { row in
-                                    NavigationLink(destination: CampusDetailView(row: row)) {
-                                        CampusRow(row: row)
-                                    }
-                                }
-                            }
-                        }
-                        if !vm.retailClosed.isEmpty {
-                            Section("Closed") {
-                                ForEach(vm.retailClosed) { row in
-                                    NavigationLink(destination: CampusDetailView(row: row)) {
-                                        CampusRow(row: row)
-                                    }
+                        Section("Campus Retail") {
+                            ForEach(vm.retail) { row in
+                                NavigationLink(destination: CampusDetailView(row: row)) {
+                                    CampusRow(row: row)
                                 }
                             }
                         }
@@ -111,26 +92,12 @@ struct DiningListView: View {
 private struct HallRow: View {
     let row: DiningViewModel.RowModel
     
-    private func timeString(from date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "H:mm"
-        return formatter.string(from: date)
-    }
-    
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline) {
                 Text(row.name)
                     .appFont(.headline)
-                    .lineLimit(1)
                 Spacer(minLength: 12)
-                
-                if let nextChange = row.nextChangeAt {
-                    Text(timeString(from: nextChange))
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(row.openNow ? .green : .red)
-                        .monospacedDigit()
-                }
             }
             
             if let distance = row.distanceMiles {
@@ -145,26 +112,12 @@ private struct HallRow: View {
 private struct CampusRow: View {
     let row: DiningViewModel.RowModel
     
-    private func timeString(from date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "H:mm"
-        return formatter.string(from: date)
-    }
-    
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline) {
                 Text(row.name)
                     .appFont(.headline)
-                    .lineLimit(1)
                 Spacer(minLength: 12)
-                
-                if let nextChange = row.nextChangeAt {
-                    Text(timeString(from: nextChange))
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(row.openNow ? .green : .red)
-                        .monospacedDigit()
-                }
             }
             
             if let distance = row.distanceMiles {
@@ -182,92 +135,39 @@ private struct CampusRow: View {
     }
 }
 
-// MARK: - Preview Helpers
-
 private class PreviewDiningViewModel: DiningViewModel {
     override func load() {
         // Simulated data for preview
-        let now = Date()
-        
-        // Create sample windows for previews
-        let breakfast = ServiceWindow(
-            start: Calendar.current.date(bySettingHour: 7, minute: 0, second: 0, of: now)!,
-            end: Calendar.current.date(bySettingHour: 10, minute: 0, second: 0, of: now)!,
-            label: "Breakfast"
-        )
-        let lunch = ServiceWindow(
-            start: Calendar.current.date(bySettingHour: 11, minute: 0, second: 0, of: now)!,
-            end: Calendar.current.date(bySettingHour: 14, minute: 0, second: 0, of: now)!,
-            label: "Lunch"
-        )
-        let dinner = ServiceWindow(
-            start: Calendar.current.date(bySettingHour: 17, minute: 0, second: 0, of: now)!,
-            end: Calendar.current.date(bySettingHour: 20, minute: 0, second: 0, of: now)!,
-            label: "Dinner"
-        )
-        
-        let retailWindow = ServiceWindow(
-            start: Calendar.current.date(bySettingHour: 7, minute: 0, second: 0, of: now)!,
-            end: Calendar.current.date(bySettingHour: 22, minute: 0, second: 0, of: now)!
-        )
-        
-        let residentialWindows = DayWindows(date: now, intervals: [breakfast, lunch, dinner])
-        let retailWindows = DayWindows(date: now, intervals: [retailWindow])
-        
-        self.residentialOpen = [
+        self.residential = [
             RowModel(
                 id: "BruinPlate",
                 name: "Bruin Plate",
-                hall: DiningHall(id: "BruinPlate", name: "Bruin Plate", url: nil, type: .residential, coordinate: nil),
-                openNow: true,
-                currentMeal: "Dinner",
-                nextChangeAt: Date().addingTimeInterval(3600),
-                nextChangeType: .close,
+                hall: DiningHall(id: "BruinPlate", name: "Bruin Plate", url: nil, type: .residential, coordinate: GeoPoint(lat: 34.0720, lon: -118.4521)),
                 distanceMiles: 0.2,
-                occupancy: WaitzPrediction(percentage: 75, busyness: "busy"),
-                todayWindows: residentialWindows
-            )
-        ]
-        self.residentialClosed = [
+                occupancy: WaitzPrediction(percentage: 75, busyness: "busy")
+            ),
             RowModel(
                 id: "DeNeveDining",
                 name: "De Neve Dining",
-                hall: DiningHall(id: "DeNeveDining", name: "De Neve Dining", url: nil, type: .residential, coordinate: nil),
-                openNow: false,
-                currentMeal: nil,
-                nextChangeAt: Date().addingTimeInterval(7200),
-                nextChangeType: .open,
+                hall: DiningHall(id: "DeNeveDining", name: "De Neve Dining", url: nil, type: .residential, coordinate: GeoPoint(lat: 34.0720, lon: -118.4521)),
                 distanceMiles: 0.3,
-                occupancy: nil,
-                todayWindows: residentialWindows
+                occupancy: nil
             )
         ]
-        self.retailOpen = [
+        self.retail = [
             RowModel(
                 id: "CORE",
                 name: "CORE (Ready-to-Eat)",
-                hall: DiningHall(id: "CORE", name: "CORE (Ready-to-Eat)", url: nil, type: .campusRetail, coordinate: nil),
-                openNow: true,
-                currentMeal: nil,
-                nextChangeAt: Date().addingTimeInterval(14400),
-                nextChangeType: .close,
+                hall: DiningHall(id: "CORE", name: "CORE (Ready-to-Eat)", url: nil, type: .campusRetail, coordinate: GeoPoint(lat: 34.0720, lon: -118.4521)),
                 distanceMiles: 0.1,
-                occupancy: nil,
-                todayWindows: retailWindows
-            )
-        ]
-        self.retailClosed = [
+                occupancy: nil
+            ),
             RowModel(
                 id: "PandaExpress",
                 name: "Panda Express",
-                hall: DiningHall(id: "PandaExpress", name: "Panda Express", url: nil, type: .campusRetail, coordinate: nil),
-                openNow: false,
-                currentMeal: nil,
-                nextChangeAt: Date().addingTimeInterval(3600),
-                nextChangeType: .open,
+                hall: DiningHall(id: "PandaExpress", name: "Panda Express", url: nil, type: .campusRetail, coordinate: GeoPoint(lat: 34.0720, lon: -118.4521)),
                 distanceMiles: 0.15,
-                occupancy: nil,
-                todayWindows: retailWindows
+                occupancy: nil
             )
         ]
     }

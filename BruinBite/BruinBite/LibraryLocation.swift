@@ -5,14 +5,12 @@ public struct LibraryLocation: Identifiable, Hashable {
     public let name: String
     public let hours: [LibraryHours]
     public let coordinate: GeoPoint?
-    public let additionalServices: [LibraryServiceInfo]
     
-    public init(id: String, name: String, hours: [LibraryHours], coordinate: GeoPoint?, additionalServices: [LibraryServiceInfo] = []) {
+    public init(id: String, name: String, hours: [LibraryHours] = [], coordinate: GeoPoint?) {
         self.id = id
         self.name = name
         self.hours = hours
         self.coordinate = coordinate
-        self.additionalServices = additionalServices
     }
     
     // Hashable conformance
@@ -25,8 +23,7 @@ public struct LibraryLocation: Identifiable, Hashable {
         lhs.id == rhs.id && 
         lhs.name == rhs.name && 
         lhs.hours == rhs.hours && 
-        lhs.coordinate == rhs.coordinate &&
-        lhs.additionalServices == rhs.additionalServices
+        lhs.coordinate == rhs.coordinate
     }
 }
 

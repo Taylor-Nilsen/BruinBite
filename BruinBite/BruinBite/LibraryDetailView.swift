@@ -6,16 +6,6 @@ struct LibraryDetailView: View {
     let distanceMiles: Double?
     @Environment(\.dismiss) private var dismiss
     
-    private func formatHours(_ hours: LibraryHours?) -> String {
-        guard let hours = hours else { return "Closed" }
-        return "\(hours.open) - \(hours.close)"
-    }
-    
-    private func todayHours() -> LibraryHours? {
-        let weekday = Calendar.current.weekdaySymbols[Calendar.current.component(.weekday, from: Date()) - 1]
-        return library.hours.first { $0.day == weekday }
-    }
-    
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
@@ -32,7 +22,7 @@ struct LibraryDetailView: View {
                     Spacer()
                 }
                 
-                // Main Content
+                // Main Content - all content pushed to top
                 VStack(spacing: 12) {
                     Text(library.name)
                         .font(.system(size: 32, weight: .bold))
@@ -43,13 +33,6 @@ struct LibraryDetailView: View {
                         Text(String(format: "%.2f mi", distance))
                             .font(.system(size: 20))
                             .foregroundColor(.gray)
-                            .monospacedDigit()
-                    }
-                    
-                    if let hours = todayHours() {
-                        Text(formatHours(hours))
-                            .font(.system(size: 37, weight: .bold))
-                            .foregroundColor(isOpen(hours) ? .green : .red)
                             .monospacedDigit()
                     }
                 }
@@ -65,37 +48,28 @@ struct LibraryDetailView: View {
                         mapItem.openInMaps(launchOptions: [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving])
                     }
                 }) {
-                    Text("Navigate")
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 20)
-                                .fill(Color.blue)
-                        )
-                        .padding(.horizontal)
+                    HStack(spacing: 8) {
+                        Image(systemName: "location.fill")
+                            .font(.system(size: 18, weight: .semibold))
+                        Text("Navigate")
+                            .appFont(.title3)
+                            .fontWeight(.semibold)
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .padding(.horizontal, 24)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color.blue)
+                            .shadow(color: Color.blue.opacity(0.3), radius: 8, x: 0, y: 4)
+                    )
+                    .padding(.horizontal, 24)
                 }
                 .padding(.bottom, 40)
             }
         }
         .navigationBarHidden(true)
-    }
-    
-    private func isOpen(_ hours: LibraryHours) -> Bool {
-        let now = Date()
-        let calendar = Calendar.current
-        let currentMinutes = calendar.component(.hour, from: now) * 60 + calendar.component(.minute, from: now)
-        
-        let openComponents = hours.open.split(separator: ":").compactMap { Int($0) }
-        let closeComponents = hours.close.split(separator: ":").compactMap { Int($0) }
-        
-        guard openComponents.count == 2, closeComponents.count == 2 else { return false }
-        
-        let openMinutes = openComponents[0] * 60 + openComponents[1]
-        let closeMinutes = closeComponents[0] * 60 + closeComponents[1]
-        
-        return currentMinutes >= openMinutes && currentMinutes <= closeMinutes
     }
 }
 
@@ -105,9 +79,7 @@ struct LibraryDetailView: View {
             library: LibraryLocation(
                 id: "powell",
                 name: "Powell Library",
-                hours: [
-                    LibraryHours(day: "Tuesday", open: "10:00", close: "16:00")
-                ],
+                hours: [],
                 coordinate: GeoPoint(lat: 34.07192, lon: -118.44218)
             ),
             distanceMiles: 0.2

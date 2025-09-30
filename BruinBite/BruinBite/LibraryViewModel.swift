@@ -19,20 +19,24 @@ final class LibraryViewModel: ObservableObject {
             .store(in: &cancellables)
     }
 
-    func load() {
-        guard !isLoading else { return }
+    func load() async {
+        guard !isLoading else { 
+            return 
+        }
         isLoading = true
         errorMessage = nil
-        Task {
-            defer { self.isLoading = false }
-            do {
-                let libs = try await service.fetchLibraries()
-                self.libraries = libs
-                sortLibraries()
-            } catch {
-                self.errorMessage = "Failed to load library data. Please try again."
-                self.libraries = []
-            }
+        
+        defer { 
+            self.isLoading = false 
+        }
+        
+        do {
+            let libs = try await service.fetchLibraries()
+            self.libraries = libs
+            sortLibraries()
+        } catch {
+            self.errorMessage = "Failed to load library data. Please try again."
+            self.libraries = []
         }
     }
 

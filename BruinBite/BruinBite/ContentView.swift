@@ -35,14 +35,6 @@ struct ContentView: View {
             .tabItem {
                 Label("Campus", systemImage: "building.2")
             }
-            
-            // Gym tab
-            NavigationStack {
-                GymView()
-            }
-            .tabItem {
-                Label("Gym", systemImage: "figure.walk")
-            }
         }
     }
 }

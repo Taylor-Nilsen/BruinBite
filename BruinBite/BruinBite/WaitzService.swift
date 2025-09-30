@@ -12,6 +12,25 @@ struct WaitzResponse: Codable {
     }
     
     private static let locationMapping = [
+        // John Wooden Center Zones - matching website names
+        "Free Weight Zone": "JWC_FreeWeights",
+        "Advanced Circuit Zone": "JWC_Circuit",
+        "Novice Circuit Zone": "JWC_Beginner",
+        "Cardio Zone": "JWC_Cardio",
+        "Functional Training Zone": "JWC_Functional",
+        "Collins Court": "JWC_Basketball",
+        "Pardee Gym": "JWC_Pardee",
+        "Rock Wall": "JWC_RockWall",
+        "Dynasty Room": "JWC_Studios",
+        "Gold Room": "JWC_Studios",
+        "Pyramid Room": "JWC_Studios",
+        
+        // BFIT Zones - matching website areas
+        "Cardio Equipment Area": "BFIT_Cardio",
+        "Strength Equipment Area": "BFIT_Strength",
+        "General Workout Area": "BFIT_Main",
+        
+        // Keep existing dining mappings
         "Bruin Plate Residential Restaurant": "BruinPlate",
         "De Neve Residential Restaurant": "DeNeveDining",
         "Covel Residential Restaurant": "EpicuriaAtCovel",
@@ -26,11 +45,14 @@ struct WaitzResponse: Codable {
     
     var predictions: [String: WaitzPrediction] {
         var result: [String: WaitzPrediction] = [:]
+        
+        // Process all locations
         for loc in locations {
             if let id = Self.locationMapping[loc.name] {
                 result[id] = WaitzPrediction(percentage: loc.percentage, busyness: loc.busyness)
             }
         }
+        
         return result
     }
 }
